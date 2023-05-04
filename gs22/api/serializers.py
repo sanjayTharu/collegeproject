@@ -1,5 +1,11 @@
 from rest_framework import serializers
-from .models import Movie,Theatre,Show,Seat,Ticket,Payment,Customer,Profile
+from django.core.mail import send_mail
+from django.conf import settings
+from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+from .tokens import account_activation_token
+from .models import Movie,Theatre,Show,Seat,Ticket,Payment,Customer
 
 class MovieSerializer(serializers.ModelSerializer):
     class Meta:
@@ -32,14 +38,43 @@ class PaymentSerializer(serializers.ModelSerializer):
         fields='__all__'
 
 class CustomerSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Customer
-        fields='__all__'
+        fields=['id','email','first_name','last_name','is_active','is_staff']
+        extra_kwargs={
+            'id': {'read_only':True},
+            'email':{'required':True},
+            'first_name':{'required':True},
+            'last_name':{'required':True},
+            'is_active':{'read_only':True},
+            'is_staff':{'read_only':True},
+        }
+    def create(self,validated_data):
+        customer=Customer.objects.create_user(**validated_data,is_active=False)
 
-class ProfileAdmin(serializers.ModelSerializer):
-    class Meta:
-        model= Profile
-        fields='__all__'
+        #send activation mail
+        current_site=settings.CURRENT_SITE
+        domain=current_site.domain
+        protocol='https' if self.context['request'].is_secure() else 'http'
+        uidb64=urlsafe_base64_encode(force_bytes(customer.pk))
+        token=account_activation_token.make_token(customer)
+        activation_link=reverse('activate',kwargs={'uidb64':uidb64,'token':token})
+        activate_url=f'{protocol}://{domain}{activation_link}'
+
+        subject='Activate Your Account'
+        message=f'Hi {customer.username},\n\n Please use this link to activate your account:\n\n{activate_url}'
+        from_email=settings.EMAIL_HOST_USER
+        to_email=[customer.email]
+        send_mail(subject,message,from_email,to_email,fail_silently=False)
+
+        return customer
+
+
+# class ProfileAdmin(serializers.ModelSerializer):
+#     class Meta:
+#         model= Profile
+#         fields='__all__'
 
 
 # from rest_framework import serializers
