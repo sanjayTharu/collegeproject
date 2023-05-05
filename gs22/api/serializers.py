@@ -96,11 +96,11 @@ class CustomerSerializer(serializers.ModelSerializer):
 #         model=PasswordResetToken
 #         fields='__all__'
 
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
 
-class ChangePasswordSerializer(serializers.Serializer):
-    class Meta:
-        model=User
-        old_password=serializers.CharField(required=True)
-        new_password=serializers.CharField(required=True)
+# class ChangePasswordSerializer(serializers.Serializer):
+#     class Meta:
+#         model=User
+#         old_password=serializers.CharField(required=True)
+#         new_password=serializers.CharField(required=True)
 

@@ -11,6 +11,7 @@ from django.contrib.auth import authenticate,get_user_model
 from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 
 from django.contrib.auth.models import User,update_last_login
 from rest_framework.authentication import SessionAuthentication
@@ -30,6 +31,10 @@ import stripe
 #     else:
 #         return {'movies':movie_name}    
 
+class CustomPagination(PageNumberPagination):
+    page_size=10
+    page_query_param='page_size'
+    max_page_size=100
 
 
 class MovieVIewSet(viewsets.ModelViewSet):
@@ -40,8 +45,9 @@ class MovieVIewSet(viewsets.ModelViewSet):
     
     queryset=Movie.objects.all()
     serializer_class=MovieSerializer
-    
+
     permission_classes=[IsAuthenticatedOrReadOnly]
+    pagination_class=CustomPagination
 
 
     # def get_serializer_context(self):
@@ -52,17 +58,23 @@ class MovieVIewSet(viewsets.ModelViewSet):
 class TheatreViewSet(viewsets.ModelViewSet):
     serializer_class=TheatreSerializer
     queryset=Theatre.objects.all()
+
     permission_classes=[IsAuthenticatedOrReadOnly]
+    pagination_class=CustomPagination
 
 class ShowViewSet(viewsets.ModelViewSet):
     serializer_class=ShowSerializer
     queryset=Show.objects.all()
+    
     permission_classes=[IsAuthenticatedOrReadOnly]
+    pagination_class=CustomPagination
 
 class SeatViewSet(viewsets.ModelViewSet):
     queryset=Seat.objects.all()
     serializer_class=SeatSerializer
+
     permission_classes=[IsAuthenticatedOrReadOnly]
+    pagination_class=CustomPagination
 
     def retrieve(self, request, *args, **kwargs):
         instance=self.get_object()
@@ -79,12 +91,16 @@ class SeatViewSet(viewsets.ModelViewSet):
 class TicketViewSet(viewsets.ModelViewSet):
     serializer_class=TicketSerializer
     queryset=Ticket.objects.all()
+
     permission_classes=[IsAuthenticatedOrReadOnly]
+    pagination_class=CustomPagination
 
 class PaymentViewSet(viewsets.ModelViewSet):
     queryset=Payment.objects.all()
     serializer_class=PaymentSerializer
+
     permission_classes=[IsAuthenticated]
+    pagination_class=CustomPagination
 
     @action(detail=True,methods=['post'])
     def create_payment_intent(self,request,pk=None):
@@ -134,11 +150,13 @@ class PaymentViewSet(viewsets.ModelViewSet):
 class CustomerViewSet(viewsets.ModelViewSet):
     queryset=Customer.objects.all()
     serializer_class=CustomerSerializer
+
     permission_classes_by_action={
         'create':[AllowAny],
         'login':[AllowAny],
         'change_password':[IsAuthenticated]
         }
+    pagination_class=CustomPagination
 
     ## defining permission classes
     def get_permissions(self):
