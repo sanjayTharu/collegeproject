@@ -153,7 +153,10 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:3000',
 ]
 REST_FRAMEWORK={
-    'DEFAULT_RENDERER_CLASSES':('rest_framework.renderers.JSONRenderer',)
+    'DEFAULT_RENDERER_CLASSES':('rest_framework.renderers.JSONRenderer',),
+    'DEFAULT_AUTHENTICATION_CLASSES':[
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
 }
 
 CORS_ALLOW_METHODS = [
@@ -175,11 +178,7 @@ CORS_ALLOW_HEADERS = [
     "x-csrftoken",
     "x-requested-with",
 ]
-REST_FRAMEWORK={
-    'DEFAULT_AUTHENTICATION_CLASSES':[
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ],
-}
+
 from datetime import timedelta
 
 SIMPLE_JWT={
