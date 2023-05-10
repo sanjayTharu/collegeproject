@@ -53,40 +53,40 @@ class Movie(models.Model):
     def __str__(self):
         return str(self.title)
 
-    def update_recommended_movies(self):
-        # load movies.csv and ratings.csv files
-        movies_df = pd.read_csv('data/movies.csv')
-        ratings_df = pd.read_csv('data/ratings.csv')
+    # def update_recommended_movies(self):
+    #     # load movies.csv and ratings.csv files
+    #     movies_df = pd.read_csv('data/movies.csv')
+    #     ratings_df = pd.read_csv('data/ratings.csv')
 
-        # merge the two dataframes using movieId column as key
-        df = pd.merge(movies_df, ratings_df, on='movieId')
+    #     # merge the two dataframes using movieId column as key
+    #     df = pd.merge(movies_df, ratings_df, on='movieId')
 
-        # pivot the merged dataframe to create user-movie rating matrix
-        matrix_df = df.pivot_table(index='userId', columns='title', values='rating')
+    #     # pivot the merged dataframe to create user-movie rating matrix
+    #     matrix_df = df.pivot_table(index='userId', columns='title', values='rating')
 
-        # fill missing values with 0
-        matrix_df.fillna(0, inplace=True)
+    #     # fill missing values with 0
+    #     matrix_df.fillna(0, inplace=True)
 
-        # compute pairwise similarity matrix
-        similarity_matrix = cosine_similarity(matrix_df)
+    #     # compute pairwise similarity matrix
+    #     similarity_matrix = cosine_similarity(matrix_df)
 
-        # implement K-Nearest Neighbors algorithm to find most similar movies
-        knn = NearestNeighbors(metric='cosine', algorithm='brute', n_neighbors=10)
-        knn.fit(similarity_matrix)
-        movie_title = self.title.lower()
-        movie_index = matrix_df.columns.get_loc(movie_title)
-        distances, indices = knn.kneighbors(matrix_df.iloc[:, movie_index].values.reshape(1, -1))
+    #     # implement K-Nearest Neighbors algorithm to find most similar movies
+    #     knn = NearestNeighbors(metric='cosine', algorithm='brute', n_neighbors=10)
+    #     knn.fit(similarity_matrix)
+    #     movie_title = self.title.lower()
+    #     movie_index = matrix_df.columns.get_loc(movie_title)
+    #     distances, indices = knn.kneighbors(matrix_df.iloc[:, movie_index].values.reshape(1, -1))
 
-        # update recommended_movies field
-        recommended_movies = []
-        for i in range(1, len(distances.flatten())):
-            recommended_movies.append(matrix_df.columns[indices.flatten()[i]])
-        self.recommended_movies.set(recommended_movies)
+    #     # update recommended_movies field
+    #     recommended_movies = []
+    #     for i in range(1, len(distances.flatten())):
+    #         recommended_movies.append(matrix_df.columns[indices.flatten()[i]])
+    #     self.recommended_movies.set(recommended_movies)
 
-    def save(self, *args, **kwargs):
-        # update recommended movies before saving
-        self.update_recommended_movies()
-        super().save(*args, **kwargs)
+    # def save(self, *args, **kwargs):
+    #     # update recommended movies before saving
+    #     self.update_recommended_movies()
+    #     super().save(*args, **kwargs)
     
 
 
@@ -133,12 +133,16 @@ class Seat(models.Model):
 
 
 
-
+from django.utils import timezone
 class Customer(AbstractBaseUser):
-    email=models.EmailField(unique=True)
-    is_active=models.BooleanField(default=True)
-    is_staff=models.BooleanField(default=False)
-    is_admin=models.BooleanField(default=False)
+    email = models.EmailField(unique=True)
+    first_name = models.CharField(max_length=30, blank=True)
+    last_name = models.CharField(max_length=30, blank=True)
+    date_joined = models.DateTimeField(default=timezone.now, editable=False)
+    last_login = models.DateTimeField(_('last login'), blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+    is_admin = models.BooleanField(default=False)
 
     
     
@@ -150,6 +154,8 @@ class Customer(AbstractBaseUser):
     class Meta:
         verbose_name = _('user')
         verbose_name_plural = _('users')
+        ordering = ['-date_joined']
+
 
 
     def __str__(self):
@@ -159,10 +165,34 @@ class Customer(AbstractBaseUser):
         return self.is_staff
     def has_module_perms(self,app_label):
         return self.is_staff
+      
+    def get_full_name(self):
+        full_name = '%s %s' % (self.first_name, self.last_name)
+        return full_name.strip()
+
+    def get_short_name(self):
+        return self.first_name
+    
     
 
    
+# class Customer(Customer, models.Model):
+#     objects = UserManager()
+#     date_joined = models.DateTimeField(_('date joined'), auto_now_add=True)
+#     last_login = models.DateTimeField(_('last login'), blank=True, null=True)
 
+#     class Meta:
+#         verbose_name = _('user')
+#         verbose_name_plural = _('users')
+#         abstract = True
+#         ordering = ['-date_joined']
+
+#     def get_full_name(self):
+#         full_name = '%s %s' % (self.first_name, self.last_name)
+#         return full_name.strip()
+
+#     def get_short_name(self):
+#         return self.first_name
     
     
 
