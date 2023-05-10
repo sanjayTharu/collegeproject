@@ -53,40 +53,40 @@ class Movie(models.Model):
     def __str__(self):
         return str(self.title)
 
-    # def update_recommended_movies(self):
-    #     # load movies.csv and ratings.csv files
-    #     movies_df = pd.read_csv('data/movies.csv')
-    #     ratings_df = pd.read_csv('data/ratings.csv')
+    def update_recommended_movies(self):
+        # load movies.csv and ratings.csv files
+        movies_df = pd.read_csv('data/movies.csv')
+        ratings_df = pd.read_csv('data/ratings.csv')
 
-    #     # merge the two dataframes using movieId column as key
-    #     df = pd.merge(movies_df, ratings_df, on='movieId')
+        # merge the two dataframes using movieId column as key
+        df = pd.merge(movies_df, ratings_df, on='movieId')
 
-    #     # pivot the merged dataframe to create user-movie rating matrix
-    #     matrix_df = df.pivot_table(index='userId', columns='title', values='rating')
+        # pivot the merged dataframe to create user-movie rating matrix
+        matrix_df = df.pivot_table(index='userId', columns='title', values='rating')
 
-    #     # fill missing values with 0
-    #     matrix_df.fillna(0, inplace=True)
+        # fill missing values with 0
+        matrix_df.fillna(0, inplace=True)
 
-    #     # compute pairwise similarity matrix
-    #     similarity_matrix = cosine_similarity(matrix_df)
+        # compute pairwise similarity matrix
+        similarity_matrix = cosine_similarity(matrix_df)
 
-    #     # implement K-Nearest Neighbors algorithm to find most similar movies
-    #     knn = NearestNeighbors(metric='cosine', algorithm='brute', n_neighbors=10)
-    #     knn.fit(similarity_matrix)
-    #     movie_title = self.title.lower()
-    #     movie_index = matrix_df.columns.get_loc(movie_title)
-    #     distances, indices = knn.kneighbors(matrix_df.iloc[:, movie_index].values.reshape(1, -1))
+        # implement K-Nearest Neighbors algorithm to find most similar movies
+        knn = NearestNeighbors(metric='cosine', algorithm='brute', n_neighbors=10)
+        knn.fit(similarity_matrix)
+        movie_title = self.title.lower()
+        movie_index = matrix_df.columns.get_loc(movie_title)
+        distances, indices = knn.kneighbors(matrix_df.iloc[:, movie_index].values.reshape(1, -1))
 
-    #     # update recommended_movies field
-    #     recommended_movies = []
-    #     for i in range(1, len(distances.flatten())):
-    #         recommended_movies.append(matrix_df.columns[indices.flatten()[i]])
-    #     self.recommended_movies.set(recommended_movies)
+        # update recommended_movies field
+        recommended_movies = []
+        for i in range(1, len(distances.flatten())):
+            recommended_movies.append(matrix_df.columns[indices.flatten()[i]])
+        self.recommended_movies.set(recommended_movies)
 
-    # def save(self, *args, **kwargs):
-    #     # update recommended movies before saving
-    #     self.update_recommended_movies()
-    #     super().save(*args, **kwargs)
+    def save(self, *args, **kwargs):
+        # update recommended movies before saving
+        self.update_recommended_movies()
+        super().save(*args, **kwargs)
     
 
 
