@@ -183,22 +183,15 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.FormParser',
         'rest_framework.parsers.MultiPartParser'
      ),
-    # 'DEFAULT_RENDERER_CLASSES':('rest_framework.renderers.JSONRenderer',),
-    'DEFAULT_AUTHENTICATION_CLASSES':[
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ],
+    'DEFAULT_RENDERER_CLASSES':('rest_framework.renderers.JSONRenderer',),
+    # 'DEFAULT_AUTHENTICATION_CLASSES':[
+    #     'rest_framework_simplejwt.authentication.JWTAuthentication',
+    # ],
  }
 
 
-CORS_ALLOW_METHODS = [
-    "DELETE",
-    "GET",
-    "OPTIONS",
-    "PATCH",
-    "POST",
-    "PUT",
-]
 CORS_ALLOW_HEADERS = [
+    "application/json",
     "accept",
     "accept-encoding",
     "authorization",
@@ -210,9 +203,9 @@ CORS_ALLOW_HEADERS = [
     "x-requested-with",
 ]
 
-from datetime import timedelta
+# from datetime import timedelta
 
-SIMPLE_JWT={
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
-    'REFRESH_TOKEN_LIFETIME':timedelta(days=1),
-}
+# SIMPLE_JWT={
+#     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+#     'REFRESH_TOKEN_LIFETIME':timedelta(days=1),
+# }

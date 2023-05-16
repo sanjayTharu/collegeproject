@@ -14,14 +14,14 @@ class MovieSerializer(serializers.ModelSerializer):
         model = Movie
         fields='__all__'
 
-    def get_recommended_movies(self, obj):
-        # Get the recommended movies for the current movie object
-        recommended_movies = obj.recommended_movies
+    # def get_recommended_movies(self, obj):
+    #     # Get the recommended movies for the current movie object
+    #     recommended_movies = obj.recommended_movies
 
        
 
-        # Return the serialized recommended movies
-        return recommended_movies
+    #     # Return the serialized recommended movies
+    #     return recommended_movies
 
 class TheatreSerializer(serializers.ModelSerializer):
     class Meta:
@@ -49,37 +49,38 @@ class PaymentSerializer(serializers.ModelSerializer):
         fields='__all__'
 
 class CustomerSerializer(serializers.ModelSerializer):
+    confirm_password= serializers.CharField(write_only=True)
 
+    def validate(self, attrs):
+        if attrs['password'] != attrs['confirm_password']:
+            raise serializers.ValidationError("Passwords do not match.")
+        return super().validate(attrs)
     class Meta:
         model = Customer
-        fields=['id','email','first_name','last_name','is_active','is_staff']
-        extra_kwargs={
-            'id': {'read_only':True},
-            'email':{'required':True},
-            'first_name':{'required':True},
-            'last_name':{'required':True},
-            'is_active':{'read_only':True},
-            'is_staff':{'read_only':True},
-        }
+        fields = ('email', 'password', 'confirm_password', 'username')
+
+
     def create(self,validated_data):
-        customer=Customer.objects.create_user(**validated_data,is_active=False)
-
-        #send activation mail
-        current_site=settings.CURRENT_SITE
-        domain=current_site.domain
-        protocol='https' if self.context['request'].is_secure() else 'http'
-        uidb64=urlsafe_base64_encode(force_bytes(customer.pk))
-        token=account_activation_token.make_token(customer)
-        activation_link=reverse('activate',kwargs={'uidb64':uidb64,'token':token})
-        activate_url=f'{protocol}://{domain}{activation_link}'
-
-        subject='Activate Your Account'
-        message=f'Hi {customer.username},\n\n Please use this link to activate your account:\n\n{activate_url}'
-        from_email=settings.EMAIL_HOST_USER
-        to_email=[customer.email]
-        send_mail(subject,message,from_email,to_email,fail_silently=False)
-
+        validated_data.pop('confirm_password',None)
+        customer=Customer(email=validated_data['email'],username=validated_data['username'])
+        customer.set_password(validated_data['password'])
         return customer
+        # #send activation mail
+        # current_site=settings.CURRENT_SITE
+        # domain=current_site.domain
+        # protocol='https' if self.context['request'].is_secure() else 'http'
+        # uidb64=urlsafe_base64_encode(force_bytes(customer.pk))
+        # token=account_activation_token.make_token(customer)
+        # activation_link=reverse('activate',kwargs={'uidb64':uidb64,'token':token})
+        # activate_url=f'{protocol}://{domain}{activation_link}'
+
+        # subject='Activate Your Account'
+        # message=f'Hi {customer.username},\n\n Please use this link to activate your account:\n\n{activate_url}'
+        # from_email=settings.EMAIL_HOST_USER
+        # to_email=[customer.email]
+        # send_mail(subject,message,from_email,to_email,fail_silently=False)
+
+        # return customer
 
 
 # class ProfileAdmin(serializers.ModelSerializer):

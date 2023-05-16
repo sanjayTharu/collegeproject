@@ -1,24 +1,21 @@
 from django.shortcuts import render
-from django.contrib.auth.hashers import make_password
-import requests
-
 from .serializers import MovieSerializer,TheatreSerializer,ShowSerializer,SeatSerializer,TicketSerializer,PaymentSerializer,CustomerSerializer
 from .models import Movie,Theatre,Show,Seat,Ticket,Payment,Customer
 from rest_framework import viewsets,status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth import authenticate,get_user_model
+from django.contrib.auth import authenticate,get_user_model,logout,login
 from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
-
+import requests
+from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import User,update_last_login
-from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import IsAuthenticatedOrReadOnly,IsAuthenticated,AllowAny
 from django.contrib.auth.tokens import default_token_generator
 import pickle
+from rest_framework.parsers import JSONParser
 from django.contrib.auth import get_user_model
 User=get_user_model()
   
@@ -141,73 +138,161 @@ class PaymentViewSet(viewsets.ModelViewSet):
 class CustomerViewSet(viewsets.ModelViewSet):
     queryset=Customer.objects.all()
     serializer_class=CustomerSerializer
-
-    permission_classes_by_action={
-        'create':[AllowAny],
-        'login':[AllowAny],
-        'change_password':[IsAuthenticated]
-        }
-    pagination_class=CustomPagination
-
-    ## defining permission classes
-    def get_permissions(self):
-        try:
-            return [permission() for permission in self.permission_classes_by_action[self.action]]
-        except KeyError as e:
-
-            return [permission() for permission in self.permission_classes]
-
-
-
-
-    ## This code is for creating new user or custoner with email and password entered by user
+    permission_classes=[AllowAny]
+    parser_classes = [JSONParser]
 
     def create(self,request,*args,**kwargs):
+        username=request.data.get('username')
         email=request.data.get('email')
         password=request.data.get('password')
+        confirm_password=request.data.get('confirmpass')
 
+
+        if password != confirm_password:
+            return Response({'error':'Password and confirm passwpord didnot match'},status=status.HTTP_400_BAD_REQUEST)
+        
+        # create the user
+        User = get_user_model()
+
+        user=User.objects.create_user(username=username,email=email,password=password)
+        serializer=self.get_serializer(user)
+        return Response(serializer.data,status=status.HTTP_201_CREATED)
+    
+    def login(self,request,*args,**kwargs):
+        email=request.data.get('email')
+        password=request.data.get('password')
         user=authenticate(request,email=email,password=password)
 
         if user:
-            refresh=RefreshToken.for_user(user)
-            serializer=self.get_serializer(user)
-            return Response({'token':str(refresh.access_token),'user':serializer.data},status=status.HTTP_200_OK)
+            return Response({'message':'Login Successful'},status=status.HTTP_200_OK)
         else:
-            return Response({'error':'Invalid email or password'},status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'error':'Invalid Username and Password'},status=status.HTTP_400_BAD_REQUEST)
+        
+
+
+
+    # permission_classes_by_action={
+    #     'create':[AllowAny],
+    #     'login':[AllowAny],
+    #     'change_password':[IsAuthenticated]
+    #     }
+    # pagination_class=CustomPagination
+
+    ## defining permission classes
+    # def get_permissions(self):
+    #     try:
+    #         return [permission() for permission in self.permission_classes_by_action[self.action]]
+    #     except KeyError as e:
+
+    #         return [permission() for permission in self.permission_classes]
+
+
+
+
+    # This code is for creating new user or custoner with email and password entered by user
+
+    # def create(self,request,*args,**kwargs):
+    #     action = request.data.get('action')
+    #     if action == 'register':
+    #         serializer = self.get_serializer(data=request.data)
+    #         serializer.is_valid(raise_exception=True)
+    #         serializer.save()
+    #         return Response({'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
+
+    #     elif action == 'login':
+    #         email = request.data.get('email')
+    #         password = request.data.get('password')
+
+    #         user = authenticate(request, username=email, password=password)
+
+    #         if user:
+    #             login(request, user)
+    #             return Response({'message': 'Login successful'},status=status.HTTP_200_OK)
+    #         else:
+    #             return Response({'error': 'Invalid email or password'}, status=status.HTTP_401_UNAUTHORIZED)
+            
+    #     elif action == 'change_password':
+    #         user = request.user
+    #         current_password = request.data.get('current_password')
+    #         new_password = request.data.get('new_password')
+
+    #         if not user.check_password(current_password):
+    #             return Response({'error': 'Invalid current password'}, status=status.HTTP_400_BAD_REQUEST)
+
+    #         user.password = make_password(new_password)
+    #         user.save()
+    #         return Response({'message': 'Password updated successfully'}, status=status.HTTP_200_OK)
+
+    #     else:
+    #         return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+    # def get_queryset(self):
+    #     return self.queryset.filter(is_superuser=False)
+
+    # def perform_create(self, serializer):
+    #     if 'password' in self.request.data:
+    #         password = self.request.data['password']
+    #         full_name = self.request.data['full_name']
+    #         serializer.save(password=password, full_name=full_name)
+    #     else:
+    #         serializer.save()
+
+    # def perform_update(self, serializer):
+    #     if 'password' in self.request.data:
+    #         password = self.request.data['password']
+    #         serializer.save(password=password)
+    #     else:
+    #         serializer.save()
+        # email=request.data.get('email')
+        # password=request.data.get('password')
+
+        # user=authenticate(request,email=email,password=password)
+
+        # if user:
+        #     refresh=RefreshToken.for_user(user)
+        #     serializer=self.get_serializer(user)
+        #     return Response({'token':str(refresh.access_token),'user':serializer.data},status=status.HTTP_200_OK)
+        # else:
+        #     return Response({'error':'Invalid email or password'},status=status.HTTP_401_UNAUTHORIZED)
         
 
     ## This code is for updating password while user is logged in
 
-    def update(self,request,*args,**kwargs):
-        instance=self.get_object()
-        current_password=request.data.get('current_password')
-        new_pasword=request.data.get('new_password')
+    # def update(self,request,*args,**kwargs):
+    #     instance=self.get_object()
+    #     current_password=request.data.get('current_password')
+    #     new_pasword=request.data.get('new_password')
 
-        if not instance.check_password(current_password):
-            return Response({'error':'Invalid current password'},status=status.HTTP_400_BAD_REQUEST)
+    #     if not instance.check_password(current_password):
+    #         return Response({'error':'Invalid current password'},status=status.HTTP_400_BAD_REQUEST)
         
 
-        instance.set_password(new_pasword)
-        instance.save()
-        update_last_login(None,instance)
-        return Response({'message':'Password updated successfully'},status=status.HTTP_200_OK)
+    #     instance.set_password(new_pasword)
+    #     instance.save()
+    #     update_last_login(None,instance)
+    #     return Response({'message':'Password updated successfully'},status=status.HTTP_200_OK)
     
-    ## this code is used for forget password
-User=get_user_model
-class ForgotPasswordViewSet(APIView):
-        def post(self,request):
-            email=request.data.get('email')
-            try:
-                user=User.objects.get(email=email)
+    # ## this code is used for forget password
 
-            except User.DoesNotExist:
-                return Response({'error':'User with this email does not exist'},status=status.HTTP_404_NOT_FOUND)
+class ForgotPasswordViewSet(APIView):
+    parser_classes = [JSONParser]
+
+    def post(self, request):
+        email = request.data.get('email')
+        try:
+            User = get_user_model()
+
+            user = User.objects.get(email=email)
+        except ObjectDoesNotExist:
+            return Response({'error': 'User with this email does not exist'}, status=status.HTTP_404_NOT_FOUND)
         
-            token=default_token_generator.make_token(user)
-            reset_link=f"{settings.FRONTEND_URL}/reset-password/?token={token}"
-            message=f"Hi {user.username},\n\nPlease click the link below to reset your password:\n{reset_link}"
-            send_mail('Reset Password',message,settings.EMAIL_HOST_USER,[email])
-            return Response({'message':'Reset password link has been sent to your email'},status=status.HTTP_200_OK)
+        token = default_token_generator.make_token(user)
+        reset_link = f"{settings.FRONTEND_URL}/reset-password/?token={token}"
+        message = f"Hi {user.username},\n\nPlease click the link below to reset your password:\n{reset_link}"
+        send_mail('Reset Password', message, settings.EMAIL_HOST_USER, [email])
+        return Response({'message': 'Reset password link has been sent to your email'}, status=status.HTTP_200_OK)
+
 User=get_user_model    
 class ResetPasswordViewSet(APIView):
     def post(self,request):

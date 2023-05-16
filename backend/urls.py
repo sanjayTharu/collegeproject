@@ -28,7 +28,7 @@ router.register(r'customers',CustomerViewSet,basename='customer')
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/',include(router.urls)),
-    path('api/login/',CustomerViewSet.as_view({'post':'create'}),name='customer-login'),
+    path('api/login/',CustomerViewSet.as_view({'post':'login'}),name='customer-login'),
     path('api/register/',CustomerViewSet.as_view({'post':'create'}),name='customer-register'),
     path('api/change-password/',CustomerViewSet.as_view({'put':'update'}),name='customer-change-password'),
     path('api/forgot-password/',ForgotPasswordViewSet.as_view(),name='forgot-password'),
